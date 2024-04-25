@@ -1,0 +1,60 @@
+@echo off
+
+REM Variaveis
+SET INST=C:\APPs\splunk\splunkforwarder-"VERSION"-x64-release.msi
+SET LOG=C:\Apps\splunk\install.log
+SET SERVER="SERVER_IP":8089
+SET INST_DIR="C:\Program Files\SplunkUniversalForwarder\bin"
+echo %DATE% %TIME% >> %LOG%
+REM Fim das Variaveis
+
+rem Instalacao do Sysmon
+@echo #######################
+echo    Instalando Sysmon...
+@echo #######################
+::C:\Apps\Splunk\sysmon.exe -accepteula -i C:\Apps\Splunk\sysmonconfig.xml >> %LOG%
+
+@echo #######################
+echo    Instalado Sysmon!
+@echo #######################
+ping -n 5 127.0.0.1 > nul
+@cls
+
+rem Instalacao do Splunk Forwarder
+echo ##################
+echo # Install Splunk #
+echo ##################
+
+::msiexec.exe /I %INST%  /L*V C:\Apps\splunk\splunkforwarder.install.log ALLUSERS=1 /passive SPLUNKUSERNAME="admin" SPLUNKPASSWORD="YOUR_PASS" DEPLOYMENT_SERVER="%SERVER%" AGREETOLICENSE=yes LAUNCHSPLUNK=1 SERVICESTARTTYPE=auto /quiet
+ping -n 5 127.0.0.1 > nul
+
+echo Starting Splunk ...
+call %INST_DIR%\splunk start
+@cls
+
+rem Verificar se Sysmon e Splunk foram instalados corretamente
+echo Verificando a instalacao do Sysmon...
+
+    REM Verifica se o serviço esta em execucao
+    sc query sysmon64 | find "STATE" | find "RUNNING" > nul
+    if %errorlevel% equ 0 (
+        echo O serviço Sysmon64 esta em execucao. >> %LOG%
+    ) else (
+        echo O serviço Sysmon64 nao esta em execucao. >> %LOG%
+    )
+)
+
+echo Verificando a instalacao do Splunk Forwarder...
+
+    REM Verifica se o serviço esta em execucao
+    sc query SplunkForwarder | find "STATE" | find "RUNNING" > nul
+    if %errorlevel% equ 0 (
+        echo O serviço SplunkForwarder esta em execucao. >> %LOG%
+    ) else (
+        echo O serviço SplunkForwarder nao esta em execucao. >> %LOG%
+    ) 
+)
+
+echo Instalacao e inicializacao concluidas. >> %LOG%
+echo %DATE% %TIME% >> %LOG%
+@pause
